@@ -1,0 +1,14 @@
+feature,importance
+ball_pitch_third,0.09063075
+ball_dist_to_away_goal,0.088544436
+ball_dist_to_home_goal,0.08529674
+possession_change_in_window,0.07597831
+ball_z_mean,0.07589951
+ball_speed_mean,0.07530665
+ball_speed_at_anchor,0.07503714
+frames_z_above_1_5m,0.07500013
+ball_z_max,0.07491962
+n_opponents_within_3m,0.07207729
+n_opponents_within_1m5,0.07172156
+ball_speed_max,0.07095614
+period,0.06863186

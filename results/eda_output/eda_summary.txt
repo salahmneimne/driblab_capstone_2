@@ -1,0 +1,1202 @@
+====================================================================
+  DRIBLAB CAPSTONE 2026 — STEP 1: EDA
+  Data dir : /Users/salahmneimne/Desktop/driblab_capstone_2/data/raw
+  Output   : /Users/salahmneimne/Desktop/driblab_capstone_2/results/eda_output
+====================================================================
+
+====================================================================
+  FINDING 0 — DATA AVAILABILITY
+====================================================================
+  dim_event_type.csv found : True
+  Event files              : 33
+  Tracking files           : 33
+  Matches with BOTH assets : 32  -> ['678949', '679026', '679053', '679072', '679075', '679088', '679104', '679128', '682607', '682717', '682815', '683132', '683190', '683253', '683261', '683309', '683425', '684014', '684119', '684139', '684141', '684147', '689340', '689526', '689552', '689556', '713886', '713893', '713910', '713946', '713998', '714000']
+  Events only (no tracking): []
+  Tracking only (no events): []
+  Excluded matches         : ['745399']  (mentor instruction)
+
+  With few fully-labelled matches: favour data-efficient methods.
+  -> Group k-fold CV by match_id; gradient-boosted trees over deep nets.
+
+====================================================================
+  SECTION 1a — EVENT VOCABULARY  (dim_event_type.csv)
+====================================================================
+  Total rows       : 84
+  Unique event IDs : 84
+
+  By category:
+    [0] No Event                  ->   1 types
+    [1] Admin/Meta                ->  27 types
+    [2] Passing/Possession        ->  20 types
+    [3] Goalkeeper                ->   9 types
+    [4] Defensive Duels           ->  15 types
+    [5] Attacking                 ->  12 types
+
+  Primary types   (id  <100): 72  <- DETECTION TARGETS
+  Qualifier types (id >=100): 12  <- features/annotations, not targets
+
+====================================================================
+  SECTION 1b — EVENTS  (*_events.json)
+====================================================================
+  Total events : 50288  |  Matches : 32
+
+  [COORDINATE CHECK]
+    x: 0.0 -> 100.0  (expect 0-100, normalised)
+    y: 0.0 -> 100.0  (expect 0-100, normalised)
+    x=100 always = goal being attacked (per team, per half)
+
+  [SHOT CLUSTER TEST] x>50 for all shots? (confirms normalisation)
+    P1: min x=6  all>50: False
+    P2: min x=54  all>50: True
+
+  [TIME ENCODING]
+    P1: minute range 0-56
+    P2: minute range 45-103
+    -> P2 does NOT reset at 45. But tracking VTS is also continuous.
+       These are two DIFFERENT clocks — misalignment fixed in Step 2.
+
+  [OUTCOME SEMANTICS]
+    AERIAL                       outcome=True: 46%
+    BALL RECOVERY                outcome=True: 100%
+    BALL TOUCH                   outcome=True: 100%
+    CARD                         outcome=True: 100%
+    CHALLENGE                    outcome=True: 0%
+    CHANCE MISSED                outcome=True: 100%
+    CLAIM                        outcome=True: 53%
+    CLEARANCE                    outcome=True: 100%
+    DISPOSSESSED                 outcome=True: 100%
+    END                          outcome=True: 100%
+    ERROR                        outcome=True: 100%
+    FORMATION CHANGE             outcome=True: 100%
+    FOUL                         outcome=True: 48%
+    GOAL                         outcome=True: 100%
+    INTERCEPTION                 outcome=True: 100%
+    KEEPER PICKUP                outcome=True: 100%
+    MISSED SHOT                  outcome=True: 100%
+    OFFSIDE PASS                 outcome=True: 9%
+    PASS                         outcome=True: 82%
+    PENALTY FACED                outcome=True: 100%
+    SAVE                         outcome=True: 100%
+    SAVED SHOT                   outcome=True: 100%
+    SHOT ON POST                 outcome=True: 100%
+    SUBSTITUTION OFF             outcome=True: 100%
+    SUBSTITUTION ON              outcome=True: 100%
+    TACKLE                       outcome=True: 54%
+    TAKEON                       outcome=True: 55%
+
+  [CLASS DISTRIBUTION]
+    PASS                         33151 ( 65.9%)  ||||||||||||||||||||||||||||||||
+    BALL TOUCH                    4685 (  9.3%)  ||||
+    AERIAL                        2144 (  4.3%)  ||
+    TACKLE                        1968 (  3.9%)  |
+    BALL RECOVERY                 1392 (  2.8%)  |
+    FOUL                          1388 (  2.8%)  |
+    TAKEON                        1212 (  2.4%)  |
+    INTERCEPTION                   692 (  1.4%)  
+    CHALLENGE                      644 (  1.3%)  
+    DISPOSSESSED                   595 (  1.2%)  
+    SAVED SHOT                     380 (  0.8%)  
+    SAVE                           338 (  0.7%)  
+    SUBSTITUTION OFF               294 (  0.6%)  
+    SUBSTITUTION ON                294 (  0.6%)  
+    CLEARANCE                      285 (  0.6%)  
+    MISSED SHOT                    267 (  0.5%)  
+    CARD                           141 (  0.3%)  
+    GOAL                            99 (  0.2%)  
+    CLAIM                           77 (  0.2%)  
+    OFFSIDE PASS                    75 (  0.1%)  
+    END                             66 (  0.1%)  
+    KEEPER PICKUP                   28 (  0.1%)  
+    CHANCE MISSED                   24 (  0.0%)  
+    FORMATION CHANGE                22 (  0.0%)  
+    SHOT ON POST                    14 (  0.0%)  
+    ERROR                           11 (  0.0%)  
+    PENALTY FACED                    2 (  0.0%)  
+
+====================================================================
+  SECTION 1c — TRACKING DATA  (*_tracking_data.jsonl)
+====================================================================
+
+  -- Match 678949 --
+    Manchester United vs Sunderland  FPS=10
+    Frames: 62016  |  Periods: {1: 31658, 2: 30358}
+    Duration: 103.4 min  |  Avg players/frame: 22.0
+    Ball present   : 30276/62016 (48.8%) all frames
+    Cam present    : 37472/62016 (60.4%) live-play filter
+    Ball in cam    : 30256/37472 (80.7%) reliable ball frames
+    vis=True       : 486052/1361932 (35.7%) optically observed
+    vis=False      : 875880/1361932 (64.3%) AI-imputed, less reliable
+    Ball x range   : -48.3-146.2 (physical metres, expect ~0-105)
+    Ball y range   : -6.2-273.3 (physical metres, expect ~0-68)
+    Ball z nonzero : 24723/30276 frames (real height)
+
+  -- Match 679026 --
+    Arsenal FC vs FC Brentford  FPS=10
+    Frames: 59502  |  Periods: {1: 28980, 2: 30522}
+    Duration: 99.2 min  |  Avg players/frame: 22.0
+    Ball present   : 31630/59502 (53.2%) all frames
+    Cam present    : 34252/59502 (57.6%) live-play filter
+    Ball in cam    : 31354/34252 (91.5%) reliable ball frames
+    vis=True       : 467800/1309044 (35.7%) optically observed
+    vis=False      : 841244/1309044 (64.3%) AI-imputed, less reliable
+    Ball x range   : -43.5-265.5 (physical metres, expect ~0-105)
+    Ball y range   : -6.2-205.8 (physical metres, expect ~0-68)
+    Ball z nonzero : 23550/31630 frames (real height)
+
+  -- Match 679053 --
+    Everton vs Arsenal FC  FPS=10
+    Frames: 61798  |  Periods: {1: 31224, 2: 30574}
+    Duration: 103.0 min  |  Avg players/frame: 22.0
+    Ball present   : 34490/61798 (55.8%) all frames
+    Cam present    : 38034/61798 (61.5%) live-play filter
+    Ball in cam    : 34234/38034 (90.0%) reliable ball frames
+    vis=True       : 522190/1359556 (38.4%) optically observed
+    vis=False      : 837366/1359556 (61.6%) AI-imputed, less reliable
+    Ball x range   : -21.8-127.9 (physical metres, expect ~0-105)
+    Ball y range   : -3.7-185.4 (physical metres, expect ~0-68)
+    Ball z nonzero : 25651/34490 frames (real height)
+
+  -- Match 679072 --
+    Crystal Palace vs Fulham  FPS=10
+    Frames: 59968  |  Periods: {1: 29682, 2: 30286}
+    Duration: 99.9 min  |  Avg players/frame: 22.0
+    Ball present   : 26584/59968 (44.3%) all frames
+    Cam present    : 32434/59968 (54.1%) live-play filter
+    Ball in cam    : 26332/32434 (81.2%) reliable ball frames
+    vis=True       : 456271/1319296 (34.6%) optically observed
+    vis=False      : 863025/1319296 (65.4%) AI-imputed, less reliable
+    Ball x range   : -947.7-856.9 (physical metres, expect ~0-105)
+    Ball y range   : -505.5-1286.7 (physical metres, expect ~0-68)
+    Ball z nonzero : 22756/26584 frames (real height)
+
+  -- Match 679075 --
+    FC Brentford vs Tottenham  FPS=10
+    Frames: 57962  |  Periods: {1: 27828, 2: 30134}
+    Duration: 96.6 min  |  Avg players/frame: 22.0
+    Ball present   : 35440/57962 (61.1%) all frames
+    Cam present    : 40580/57962 (70.0%) live-play filter
+    Ball in cam    : 35424/40580 (87.3%) reliable ball frames
+    vis=True       : 542805/1275164 (42.6%) optically observed
+    vis=False      : 732359/1275164 (57.4%) AI-imputed, less reliable
+    Ball x range   : -40.3-204.7 (physical metres, expect ~0-105)
+    Ball y range   : -6.3-177.8 (physical metres, expect ~0-68)
+    Ball z nonzero : 27927/35440 frames (real height)
+
+  -- Match 679088 --
+    Newcastle vs Leeds  FPS=10
+    Frames: 66704  |  Periods: {1: 31262, 2: 35442}
+    Duration: 111.2 min  |  Avg players/frame: 22.0
+    Ball present   : 32830/66704 (49.2%) all frames
+    Cam present    : 38612/66704 (57.9%) live-play filter
+    Ball in cam    : 32808/38612 (85.0%) reliable ball frames
+    vis=True       : 549368/1467488 (37.4%) optically observed
+    vis=False      : 918120/1467488 (62.6%) AI-imputed, less reliable
+    Ball x range   : -19.2-125.0 (physical metres, expect ~0-105)
+    Ball y range   : -6.5-155.2 (physical metres, expect ~0-68)
+    Ball z nonzero : 25465/32830 frames (real height)
+
+  -- Match 679104 --
+    Chelsea vs FC Brentford  FPS=10
+    Frames: 60802  |  Periods: {1: 29498, 2: 31304}
+    Duration: 101.3 min  |  Avg players/frame: 22.0
+    Ball present   : 34720/60802 (57.1%) all frames
+    Cam present    : 39106/60802 (64.3%) live-play filter
+    Ball in cam    : 34666/39106 (88.6%) reliable ball frames
+    vis=True       : 467267/1337644 (34.9%) optically observed
+    vis=False      : 870377/1337644 (65.1%) AI-imputed, less reliable
+    Ball x range   : -432.3-475.1 (physical metres, expect ~0-105)
+    Ball y range   : -1602.3-1509.1 (physical metres, expect ~0-68)
+    Ball z nonzero : 27687/34720 frames (real height)
+
+  -- Match 679128 --
+    Newcastle vs FC Brentford  FPS=10
+    Frames: 62660  |  Periods: {1: 30278, 2: 32382}
+    Duration: 104.4 min  |  Avg players/frame: 22.0
+    Ball present   : 26968/62660 (43.0%) all frames
+    Cam present    : 31206/62660 (49.8%) live-play filter
+    Ball in cam    : 26700/31206 (85.6%) reliable ball frames
+    vis=True       : 400416/1378520 (29.0%) optically observed
+    vis=False      : 978104/1378520 (71.0%) AI-imputed, less reliable
+    Ball x range   : -15.9-120.4 (physical metres, expect ~0-105)
+    Ball y range   : -5.6-166.0 (physical metres, expect ~0-68)
+    Ball z nonzero : 20014/26968 frames (real height)
+
+  -- Match 682607 --
+    Sassuolo vs Lazio  FPS=10
+    Frames: 60220  |  Periods: {1: 29840, 2: 30380}
+    Duration: 100.4 min  |  Avg players/frame: 22.0
+    Ball present   : 35502/60220 (59.0%) all frames
+    Cam present    : 39462/60220 (65.5%) live-play filter
+    Ball in cam    : 35476/39462 (89.9%) reliable ball frames
+    vis=True       : 542163/1324840 (40.9%) optically observed
+    vis=False      : 782677/1324840 (59.1%) AI-imputed, less reliable
+    Ball x range   : -148.1-2101.5 (physical metres, expect ~0-105)
+    Ball y range   : -7043.1-3155.6 (physical metres, expect ~0-68)
+    Ball z nonzero : 25231/35502 frames (real height)
+
+  -- Match 682717 --
+    Lazio vs Bologna  FPS=10
+    Frames: 57996  |  Periods: {1: 28992, 2: 29004}
+    Duration: 96.7 min  |  Avg players/frame: 21.9
+    Ball present   : 28190/57996 (48.6%) all frames
+    Cam present    : 36020/57996 (62.1%) live-play filter
+    Ball in cam    : 28140/36020 (78.1%) reliable ball frames
+    vis=True       : 459925/1268060 (36.3%) optically observed
+    vis=False      : 808135/1268060 (63.7%) AI-imputed, less reliable
+    Ball x range   : -56.2-141.8 (physical metres, expect ~0-105)
+    Ball y range   : -8.3-417.7 (physical metres, expect ~0-68)
+    Ball z nonzero : 25065/28190 frames (real height)
+
+  -- Match 682815 --
+    Genoa vs Napoli  FPS=10
+    Frames: 60594  |  Periods: {1: 28422, 2: 32172}
+    Duration: 101.0 min  |  Avg players/frame: 21.8
+    Ball present   : 31850/60594 (52.6%) all frames
+    Cam present    : 35930/60594 (59.3%) live-play filter
+    Ball in cam    : 31396/35930 (87.4%) reliable ball frames
+    vis=True       : 479108/1319820 (36.3%) optically observed
+    vis=False      : 840712/1319820 (63.7%) AI-imputed, less reliable
+    Ball x range   : -37.8-245.7 (physical metres, expect ~0-105)
+    Ball y range   : -5.6-253.8 (physical metres, expect ~0-68)
+    Ball z nonzero : 21998/31850 frames (real height)
+
+  -- Match 683132 --
+    Atletico Madrid vs Elche  FPS=10
+    Frames: 62216  |  Periods: {1: 30798, 2: 31418}
+    Duration: 103.7 min  |  Avg players/frame: 22.0
+    Ball present   : 20730/62216 (33.3%) all frames
+    Cam present    : 37220/62216 (59.8%) live-play filter
+    Ball in cam    : 20714/37220 (55.7%) reliable ball frames
+    vis=True       : 511221/1368268 (37.4%) optically observed
+    vis=False      : 857047/1368268 (62.6%) AI-imputed, less reliable
+    Ball x range   : -16.1-116.8 (physical metres, expect ~0-105)
+    Ball y range   : -5.5-164.2 (physical metres, expect ~0-68)
+    Ball z nonzero : 19539/20730 frames (real height)
+
+  -- Match 683190 --
+    Espanyol vs Real Betis  FPS=10
+    Frames: 64052  |  Periods: {1: 29982, 2: 34070}
+    Duration: 106.8 min  |  Avg players/frame: 21.9
+    Ball present   : 26698/64052 (41.7%) all frames
+    Cam present    : 32510/64052 (50.8%) live-play filter
+    Ball in cam    : 26176/32510 (80.5%) reliable ball frames
+    vis=True       : 447231/1401884 (31.9%) optically observed
+    vis=False      : 954653/1401884 (68.1%) AI-imputed, less reliable
+    Ball x range   : -1526.3-1268.2 (physical metres, expect ~0-105)
+    Ball y range   : -5796.4-6285.3 (physical metres, expect ~0-68)
+    Ball z nonzero : 23108/26698 frames (real height)
+
+  -- Match 683253 --
+    Atletico Madrid vs Real Oviedo  FPS=10
+    Frames: 57116  |  Periods: {1: 28322, 2: 28794}
+    Duration: 95.2 min  |  Avg players/frame: 22.0
+    Ball present   : 34950/57116 (61.2%) all frames
+    Cam present    : 39448/57116 (69.1%) live-play filter
+    Ball in cam    : 34928/39448 (88.5%) reliable ball frames
+    vis=True       : 605299/1256552 (48.2%) optically observed
+    vis=False      : 651253/1256552 (51.8%) AI-imputed, less reliable
+    Ball x range   : -106.0-123.9 (physical metres, expect ~0-105)
+    Ball y range   : -6.1-207.8 (physical metres, expect ~0-68)
+    Ball z nonzero : 24659/34950 frames (real height)
+
+  -- Match 683261 --
+    Real Betis vs FC Barcelona  FPS=10
+    Frames: 61564  |  Periods: {1: 30784, 2: 30780}
+    Duration: 102.6 min  |  Avg players/frame: 22.0
+    Ball present   : 34634/61564 (56.3%) all frames
+    Cam present    : 38794/61564 (63.0%) live-play filter
+    Ball in cam    : 34612/38794 (89.2%) reliable ball frames
+    vis=True       : 556559/1353220 (41.1%) optically observed
+    vis=False      : 796661/1353220 (58.9%) AI-imputed, less reliable
+    Ball x range   : -38.7-129.8 (physical metres, expect ~0-105)
+    Ball y range   : -7.0-155.8 (physical metres, expect ~0-68)
+    Ball z nonzero : 24433/34634 frames (real height)
+
+  -- Match 683309 --
+    Espanyol vs Girona FC  FPS=10
+    Frames: 62372  |  Periods: {1: 30670, 2: 31702}
+    Duration: 104.0 min  |  Avg players/frame: 22.0
+    Ball present   : 27896/62372 (44.7%) all frames
+    Cam present    : 35056/62372 (56.2%) live-play filter
+    Ball in cam    : 27810/35056 (79.3%) reliable ball frames
+    vis=True       : 479617/1370820 (35.0%) optically observed
+    vis=False      : 891203/1370820 (65.0%) AI-imputed, less reliable
+    Ball x range   : -44.8-98612.3 (physical metres, expect ~0-105)
+    Ball y range   : -5.3-306646.5 (physical metres, expect ~0-68)
+    Ball z nonzero : 24722/27896 frames (real height)
+
+  -- Match 683425 --
+    Valencia vs Girona FC  FPS=10
+    Frames: 61560  |  Periods: {1: 29192, 2: 32368}
+    Duration: 102.6 min  |  Avg players/frame: 22.0
+    Ball present   : 35264/61560 (57.3%) all frames
+    Cam present    : 40902/61560 (66.4%) live-play filter
+    Ball in cam    : 34810/40902 (85.1%) reliable ball frames
+    vis=True       : 583631/1353000 (43.1%) optically observed
+    vis=False      : 769369/1353000 (56.9%) AI-imputed, less reliable
+    Ball x range   : -2371.4-209.9 (physical metres, expect ~0-105)
+    Ball y range   : -3747.2-584.8 (physical metres, expect ~0-68)
+    Ball z nonzero : 35018/35264 frames (real height)
+
+  -- Match 684014 --
+    RB Leipzig vs Hamburg  FPS=10
+    Frames: 58878  |  Periods: {1: 28304, 2: 30574}
+    Duration: 98.1 min  |  Avg players/frame: 22.0
+    Ball present   : 33234/58878 (56.4%) all frames
+    Cam present    : 40024/58878 (68.0%) live-play filter
+    Ball in cam    : 33166/40024 (82.9%) reliable ball frames
+    vis=True       : 543320/1294744 (42.0%) optically observed
+    vis=False      : 751424/1294744 (58.0%) AI-imputed, less reliable
+    Ball x range   : -546.5-125.4 (physical metres, expect ~0-105)
+    Ball y range   : -568.7-1792.8 (physical metres, expect ~0-68)
+    Ball z nonzero : 26674/33234 frames (real height)
+
+  -- Match 684119 --
+    Borussia Dortmund vs FC St. Pauli  FPS=10
+    Frames: 61598  |  Periods: {1: 29360, 2: 32238}
+    Duration: 102.7 min  |  Avg players/frame: 22.0
+    Ball present   : 33746/61598 (54.8%) all frames
+    Cam present    : 37808/61598 (61.4%) live-play filter
+    Ball in cam    : 33724/37808 (89.2%) reliable ball frames
+    vis=True       : 540428/1355156 (39.9%) optically observed
+    vis=False      : 814728/1355156 (60.1%) AI-imputed, less reliable
+    Ball x range   : -20183.6-543.9 (physical metres, expect ~0-105)
+    Ball y range   : -286.4-18892.4 (physical metres, expect ~0-68)
+    Ball z nonzero : 29233/33746 frames (real height)
+
+  -- Match 684139 --
+    Wolfsburg vs Borussia Dortmund  FPS=10
+    Frames: 58904  |  Periods: {1: 29074, 2: 29830}
+    Duration: 98.2 min  |  Avg players/frame: 22.0
+    Ball present   : 29496/58904 (50.1%) all frames
+    Cam present    : 32950/58904 (55.9%) live-play filter
+    Ball in cam    : 29098/32950 (88.3%) reliable ball frames
+    vis=True       : 430559/1294568 (33.3%) optically observed
+    vis=False      : 864009/1294568 (66.7%) AI-imputed, less reliable
+    Ball x range   : -818.8-531.7 (physical metres, expect ~0-105)
+    Ball y range   : -2622.1-2033.1 (physical metres, expect ~0-68)
+    Ball z nonzero : 29405/29496 frames (real height)
+
+  -- Match 684141 --
+    FC St. Pauli vs Stuttgart  FPS=10
+    Frames: 59304  |  Periods: {1: 28426, 2: 30878}
+    Duration: 98.8 min  |  Avg players/frame: 22.0
+    Ball present   : 28148/59304 (47.5%) all frames
+    Cam present    : 30722/59304 (51.8%) live-play filter
+    Ball in cam    : 28070/30722 (91.4%) reliable ball frames
+    vis=True       : 414338/1304204 (31.8%) optically observed
+    vis=False      : 889866/1304204 (68.2%) AI-imputed, less reliable
+    Ball x range   : -12.5-114.9 (physical metres, expect ~0-105)
+    Ball y range   : -5.9-307.3 (physical metres, expect ~0-68)
+    Ball z nonzero : 19912/28148 frames (real height)
+
+  -- Match 684147 --
+    Borussia Monchengladbach vs Bayer Leverkusen  FPS=10
+    Frames: 59138  |  Periods: {1: 29054, 2: 30084}
+    Duration: 98.6 min  |  Avg players/frame: 22.0
+    Ball present   : 33158/59138 (56.1%) all frames
+    Cam present    : 35716/59138 (60.4%) live-play filter
+    Ball in cam    : 32714/35716 (91.6%) reliable ball frames
+    vis=True       : 570638/1301036 (43.9%) optically observed
+    vis=False      : 730398/1301036 (56.1%) AI-imputed, less reliable
+    Ball x range   : -62.9-313.9 (physical metres, expect ~0-105)
+    Ball y range   : -215.9-255.8 (physical metres, expect ~0-68)
+    Ball z nonzero : 33081/33158 frames (real height)
+
+  -- Match 689340 --
+    Lorient vs Lille  FPS=10
+    Frames: 60366  |  Periods: {1: 28536, 2: 31830}
+    Duration: 100.6 min  |  Avg players/frame: 22.0
+    Ball present   : 28446/60366 (47.1%) all frames
+    Cam present    : 32126/60366 (53.2%) live-play filter
+    Ball in cam    : 27884/32126 (86.8%) reliable ball frames
+    vis=True       : 471821/1328052 (35.5%) optically observed
+    vis=False      : 856231/1328052 (64.5%) AI-imputed, less reliable
+    Ball x range   : -480.5-20568.3 (physical metres, expect ~0-105)
+    Ball y range   : -11510.8-24731.5 (physical metres, expect ~0-68)
+    Ball z nonzero : 26150/28446 frames (real height)
+
+  -- Match 689526 --
+    PSG vs Metz  FPS=10
+    Frames: 58502  |  Periods: {1: 29576, 2: 28926}
+    Duration: 97.5 min  |  Avg players/frame: 22.0
+    Ball present   : 37944/58502 (64.9%) all frames
+    Cam present    : 40570/58502 (69.3%) live-play filter
+    Ball in cam    : 37618/40570 (92.7%) reliable ball frames
+    vis=True       : 604109/1287044 (46.9%) optically observed
+    vis=False      : 682935/1287044 (53.1%) AI-imputed, less reliable
+    Ball x range   : -72.3-128.4 (physical metres, expect ~0-105)
+    Ball y range   : -4.5-157.8 (physical metres, expect ~0-68)
+    Ball z nonzero : 37937/37944 frames (real height)
+
+  -- Match 689552 --
+    Rennes vs Metz  FPS=10
+    Frames: 58352  |  Periods: {1: 27848, 2: 30504}
+    Duration: 97.3 min  |  Avg players/frame: 22.0
+    Ball present   : 33660/58352 (57.7%) all frames
+    Cam present    : 37324/58352 (64.0%) live-play filter
+    Ball in cam    : 32994/37324 (88.4%) reliable ball frames
+    vis=True       : 552683/1283744 (43.1%) optically observed
+    vis=False      : 731061/1283744 (56.9%) AI-imputed, less reliable
+    Ball x range   : -61.6-410.1 (physical metres, expect ~0-105)
+    Ball y range   : -4.3-334.6 (physical metres, expect ~0-68)
+    Ball z nonzero : 33501/33660 frames (real height)
+
+  -- Match 689556 --
+    Olympique de Marseille vs Lille  FPS=10
+    Frames: 64228  |  Periods: {1: 34454, 2: 29774}
+    Duration: 107.0 min  |  Avg players/frame: 22.0
+    Ball present   : 34188/64228 (53.2%) all frames
+    Cam present    : 37176/64228 (57.9%) live-play filter
+    Ball in cam    : 33626/37176 (90.5%) reliable ball frames
+    vis=True       : 578947/1413016 (41.0%) optically observed
+    vis=False      : 834069/1413016 (59.0%) AI-imputed, less reliable
+    Ball x range   : -25.9-192.9 (physical metres, expect ~0-105)
+    Ball y range   : -6.6-151.3 (physical metres, expect ~0-68)
+    Ball z nonzero : 34147/34188 frames (real height)
+
+  -- Match 713886 --
+    Inter vs Slavia Praha  FPS=10
+    Frames: 56554  |  Periods: {1: 27876, 2: 28678}
+    Duration: 94.3 min  |  Avg players/frame: 22.0
+    Ball present   : 32386/56554 (57.3%) all frames
+    Cam present    : 35594/56554 (62.9%) live-play filter
+    Ball in cam    : 31906/35594 (89.6%) reliable ball frames
+    vis=True       : 517549/1244188 (41.6%) optically observed
+    vis=False      : 726639/1244188 (58.4%) AI-imputed, less reliable
+    Ball x range   : -76.1-127.9 (physical metres, expect ~0-105)
+    Ball y range   : -121.2-204.4 (physical metres, expect ~0-68)
+    Ball z nonzero : 32356/32386 frames (real height)
+
+  -- Match 713893 --
+    Villarreal vs Juventus  FPS=10
+    Frames: 59248  |  Periods: {1: 29156, 2: 30092}
+    Duration: 98.7 min  |  Avg players/frame: 22.0
+    Ball present   : 30180/59248 (50.9%) all frames
+    Cam present    : 33520/59248 (56.6%) live-play filter
+    Ball in cam    : 30142/33520 (89.9%) reliable ball frames
+    vis=True       : 490145/1303456 (37.6%) optically observed
+    vis=False      : 813311/1303456 (62.4%) AI-imputed, less reliable
+    Ball x range   : -555.2-1020.2 (physical metres, expect ~0-105)
+    Ball y range   : -585.6-1275.7 (physical metres, expect ~0-68)
+    Ball z nonzero : 24135/30180 frames (real height)
+
+  -- Match 713910 --
+    Sporting CP vs Olympique de Marseille  FPS=10
+    Frames: 60322  |  Periods: {1: 29072, 2: 31250}
+    Duration: 100.5 min  |  Avg players/frame: 21.5
+    Ball present   : 29954/60322 (49.7%) all frames
+    Cam present    : 33216/60322 (55.1%) live-play filter
+    Ball in cam    : 29936/33216 (90.1%) reliable ball frames
+    vis=True       : 513703/1295232 (39.7%) optically observed
+    vis=False      : 781529/1295232 (60.3%) AI-imputed, less reliable
+    Ball x range   : -27.6-127.9 (physical metres, expect ~0-105)
+    Ball y range   : -4.2-185.3 (physical metres, expect ~0-68)
+    Ball z nonzero : 20722/29954 frames (real height)
+
+  -- Match 713946 --
+    Atletico Madrid vs Inter  FPS=10
+    Frames: 59126  |  Periods: {1: 28970, 2: 30156}
+    Duration: 98.5 min  |  Avg players/frame: 22.0
+    Ball present   : 32810/59126 (55.5%) all frames
+    Cam present    : 36334/59126 (61.5%) live-play filter
+    Ball in cam    : 32530/36334 (89.5%) reliable ball frames
+    vis=True       : 582244/1300772 (44.8%) optically observed
+    vis=False      : 718528/1300772 (55.2%) AI-imputed, less reliable
+    Ball x range   : -58.1-124.4 (physical metres, expect ~0-105)
+    Ball y range   : -4.6-156.5 (physical metres, expect ~0-68)
+    Ball z nonzero : 32713/32810 frames (real height)
+
+  -- Match 713998 --
+    Bayer Leverkusen vs Villarreal  FPS=10
+    Frames: 56654  |  Periods: {1: 27816, 2: 28838}
+    Duration: 94.4 min  |  Avg players/frame: 22.0
+    Ball present   : 33516/56654 (59.2%) all frames
+    Cam present    : 37066/56654 (65.4%) live-play filter
+    Ball in cam    : 33196/37066 (89.6%) reliable ball frames
+    vis=True       : 589382/1246388 (47.3%) optically observed
+    vis=False      : 657006/1246388 (52.7%) AI-imputed, less reliable
+    Ball x range   : -34.7-141.0 (physical metres, expect ~0-105)
+    Ball y range   : -8.1-226.2 (physical metres, expect ~0-68)
+    Ball z nonzero : 33485/33516 frames (real height)
+
+  -- Match 714000 --
+    Atletico Madrid vs FK Bodo/Glimt  FPS=10
+    Frames: 59284  |  Periods: {1: 27754, 2: 31530}
+    Duration: 98.8 min  |  Avg players/frame: 22.0
+    Ball present   : 32882/59284 (55.5%) all frames
+    Cam present    : 38126/59284 (64.3%) live-play filter
+    Ball in cam    : 32794/38126 (86.0%) reliable ball frames
+    vis=True       : 647073/1304248 (49.6%) optically observed
+    vis=False      : 657175/1304248 (50.4%) AI-imputed, less reliable
+    Ball x range   : -27.4-118.1 (physical metres, expect ~0-105)
+    Ball y range   : -9.3-223.8 (physical metres, expect ~0-68)
+    Ball z nonzero : 26341/32882 frames (real height)
+
+  -- Match 745399 --
+    Borussia Dortmund vs Atalanta  FPS=10
+    Frames: 57070  |  Periods: {1: 28026, 2: 29044}
+    Duration: 95.1 min  |  Avg players/frame: 22.0
+    Ball present   : 28332/57070 (49.6%) all frames
+    Cam present    : 32560/57070 (57.1%) live-play filter
+    Ball in cam    : 27922/32560 (85.8%) reliable ball frames
+    vis=True       : 503266/1255540 (40.1%) optically observed
+    vis=False      : 752274/1255540 (59.9%) AI-imputed, less reliable
+    Ball x range   : -72.5-305.9 (physical metres, expect ~0-105)
+    Ball y range   : -771.8-1065.0 (physical metres, expect ~0-68)
+    Ball z nonzero : 26170/28332 frames (real height)
+
+  [DEEP ANALYSIS on match 678949]
+
+====================================================================
+  SECTION 1d — CROSS-FILE CONSISTENCY
+====================================================================
+
+  ====== Match 678949 ======
+    Team IDs match  : OK
+    Player overlap  : 32 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 3159.0 s
+      CORRECTION  : +459.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 679026 ======
+    Team IDs match  : OK
+    Player overlap  : 31 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2885.0 s
+      CORRECTION  : +185.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 679053 ======
+    Team IDs match  : OK
+    Player overlap  : 28 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 3112.0 s
+      CORRECTION  : +412.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 679072 ======
+    Team IDs match  : OK
+    Player overlap  : 30 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2953.0 s
+      CORRECTION  : +253.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 679075 ======
+    Team IDs match  : OK
+    Player overlap  : 26 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2778.0 s
+      CORRECTION  : +78.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 679088 ======
+    Team IDs match  : OK
+    Player overlap  : 32 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 3121.0 s
+      CORRECTION  : +421.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 679104 ======
+    Team IDs match  : OK
+    Player overlap  : 31 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2943.0 s
+      CORRECTION  : +243.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 679128 ======
+    Team IDs match  : OK
+    Player overlap  : 30 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 3012.0 s
+      CORRECTION  : +312.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 682607 ======
+    Team IDs match  : OK
+    Player overlap  : 32 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2978.0 s
+      CORRECTION  : +278.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 682717 ======
+    Team IDs match  : OK
+    Player overlap  : 32 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2893.0 s
+      CORRECTION  : +193.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 682815 ======
+    Team IDs match  : OK
+    Player overlap  : 29 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2825.0 s
+      CORRECTION  : +125.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 683132 ======
+    Team IDs match  : OK
+    Player overlap  : 32 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 3074.0 s
+      CORRECTION  : +374.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 683190 ======
+    Team IDs match  : OK
+    Player overlap  : 31 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2990.0 s
+      CORRECTION  : +290.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 683253 ======
+    Team IDs match  : OK
+    Player overlap  : 32 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2826.0 s
+      CORRECTION  : +126.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 683261 ======
+    Team IDs match  : OK
+    Player overlap  : 32 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 3074.0 s
+      CORRECTION  : +374.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 683309 ======
+    Team IDs match  : OK
+    Player overlap  : 30 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 3071.0 s
+      CORRECTION  : +371.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 683425 ======
+    Team IDs match  : OK
+    Player overlap  : 32 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2913.0 s
+      CORRECTION  : +213.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 684014 ======
+    Team IDs match  : OK
+    Player overlap  : 32 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2824.0 s
+      CORRECTION  : +124.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 684119 ======
+    Team IDs match  : OK
+    Player overlap  : 30 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2927.0 s
+      CORRECTION  : +227.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 684139 ======
+    Team IDs match  : OK
+    Player overlap  : 32 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2892.0 s
+      CORRECTION  : +192.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 684141 ======
+    Team IDs match  : OK
+    Player overlap  : 29 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2836.0 s
+      CORRECTION  : +136.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 684147 ======
+    Team IDs match  : OK
+    Player overlap  : 32 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2887.0 s
+      CORRECTION  : +187.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 689340 ======
+    Team IDs match  : OK
+    Player overlap  : 32 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2842.0 s
+      CORRECTION  : +142.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 689526 ======
+    Team IDs match  : OK
+    Player overlap  : 31 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2944.0 s
+      CORRECTION  : +244.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 689552 ======
+    Team IDs match  : OK
+    Player overlap  : 29 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2771.0 s
+      CORRECTION  : +71.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 689556 ======
+    Team IDs match  : OK
+    Player overlap  : 29 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 3431.0 s
+      CORRECTION  : +731.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 713886 ======
+    Team IDs match  : MISMATCH
+    Player overlap  : 0 both | 32 events-only | 32 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2772.0 s
+      CORRECTION  : +72.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 713893 ======
+    Team IDs match  : OK
+    Player overlap  : 31 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2910.0 s
+      CORRECTION  : +210.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 713910 ======
+    Team IDs match  : OK
+    Player overlap  : 32 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2903.0 s
+      CORRECTION  : +203.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 713946 ======
+    Team IDs match  : OK
+    Player overlap  : 32 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2891.0 s
+      CORRECTION  : +191.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 713998 ======
+    Team IDs match  : OK
+    Player overlap  : 32 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2766.0 s
+      CORRECTION  : +66.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+  ====== Match 714000 ======
+    Team IDs match  : OK
+    Player overlap  : 32 both | 0 events-only | 0 tracking-only
+
+    COORDINATE SYSTEMS (incompatible — must transform):
+      Events  : normalised 0-100  (x=100=attacking goal, per team per half)
+      Tracking: physical metres   (0-105 x 0-68, teams switch ends at half-time)
+      Fix: scale by 1.05/0.68 + per-team per-half x-flip from GK positions
+
+    CLOCK MISALIGNMENT (must correct):
+      Tracking VTS: continuous from kick-off
+      Events P2   : restart at 45:00 game time
+      P2 tracking VTS starts at : 2770.0 s
+      CORRECTION  : +70.0 s added to every P2 event_vts
+      After fix   : residual <= 50 ms  (pure 10 Hz quantisation noise)
+
+====================================================================
+  SECTION 1e — 7 KEY INSIGHTS & TARGET EVENT SELECTION
+====================================================================
+
+  1. TWO COORDINATE SYSTEMS
+     Events: 0-100 normalised (x=100=attacking goal, always)
+     Tracking: physical metres 0-105 x 0-68 (teams switch ends)
+     -> Step 2.1: scale + per-team per-half x-flip from GK positions
+
+  2. TWO MISALIGNED CLOCKS
+     Tracking VTS: continuous from kick-off
+     Events P2: restart at 45:00 game time (offset ~459 s)
+     -> Step 2.2: add first_P2_VTS - 45*60 to every P2 event
+
+  3. BALL IS INCOMPLETE BUT HAS HEIGHT
+     Ball ~49% all frames, ~81% live-play (cam-present) frames
+     Real z-height available: cleanest signal for aerial duels
+     -> Step 2.3: interpolate gaps <=25f | Step 3: z-gate at 1.5m
+
+  4. ~64% POSITIONS ARE AI-IMPUTED (vis=False)
+     Less reliable than optically confirmed, especially off-ball
+     Cannot discard — they still carry positional information
+     -> Step 3: cost = dist * 1.4 for vis=False players
+
+  5. SEVERE CLASS IMBALANCE
+     PASS dominates at ~63% of all labelled events
+     Plain accuracy is meaningless (predict PASS always = 63%)
+     -> Steps 4/5: always per-class F1; class_weight=balanced in Step 5
+
+  6. PLAYERS ARE DOTS — NO POSE IN TRACKING
+     Tracking gives (x,y) position, not body orientation or keypoints
+     Some events may need pose to disambiguate (e.g. tackle direction)
+     -> Step 6 (optional): run pose algorithms on video to enrich features
+
+  7. FEW FULLY-LABELLED MATCHES
+     Only matches with BOTH events + tracking files can train models
+     Small labelled set -> deep networks overfit, GBTs generalise better
+     -> Step 5: gradient-boosted trees; leave-one-match-out cross-validation
+
+====================================================================
+  TARGET EVENT SELECTION — FINAL DECISION
+  12 classes chosen from 27 observed types
+====================================================================
+
+  INCLUDED (12 classes):
+    PASS                  33151 samples
+                         -> Highest volume (~63%). Foundational: defines possession exchange. Ball speed + same-team transfer.
+
+    TACKLE                1968 samples
+                         -> Opponent within 1.5m when ball changes team + ball near ground (z < 1.5m).
+
+    INTERCEPTION           692 samples
+                         -> Ball in flight (z > 0.5m) or no contact-range player when team changes.
+
+    CLEARANCE              285 samples
+                         -> High-speed ball away from defensive zone. Kinematic signal.
+
+    BALL RECOVERY         1392 samples
+                         -> Loose ball claimed by nearest player. Ball speed near zero.
+
+    AERIAL                2144 samples
+                         -> ball_z > 1.5m is the cleanest binary signal in the dataset. Both teams nearby.
+
+    SAVE                   338 samples
+                         -> Ball heading to goal + goalkeeper position + ball stays in play.
+
+    MISSED SHOT            267 samples
+                         -> Ball speed > 15 m/s toward goal mouth + ball exits pitch at far end.
+
+    SAVED SHOT             380 samples
+                         -> Same as missed shot but ball stays in play after goalkeeper contact.
+
+    GOAL                    99 samples
+                         -> Ball crosses goal line. Rare but essential. Same shot trajectory signal.
+
+    DISPOSSESSED           595 samples
+                         -> Player loses ball at feet. Combines with tackle signal (team changes, contact).
+
+    KEEPER PICKUP           28 samples
+                         -> Goalkeeper claims ball. GK position + ball_z + ball stops.
+
+  EXCLUDED:
+    FOUL                       1388 samples  |  No reliable contact signal from (x,y) dots. Needs pose or video.
+    CARD                        141 samples  |  Administrative consequence of FOUL. Not independently detectable.
+    BALL TOUCH                 4685 samples  |  Too fine-grained for 10 Hz. Cannot distinguish from carry.
+    TAKEON                     1212 samples  |  Dribble attempt. Cannot reliably distinguish from carry at 10 Hz.
+    OFFSIDE PASS                 75 samples  |  Requires computing offside line. Out of scope for tracking alone.
+    CHALLENGE                   644 samples  |  Broad overlap with TACKLE. Excluded to avoid label noise.
+    SUBSTITUTION ON             294 samples  |  Administrative. No ball or position signal.
+    SUBSTITUTION OFF            294 samples  |  Administrative. No ball or position signal.
+    END                          66 samples  |  Match boundary marker. Administrative.
+    FORMATION CHANGE             22 samples  |  Tactical annotation. No event-level tracking signal.
+    CLAIM                        77 samples  |  Goalkeeper sub-event. Covered by SAVE.
+    CHANCE MISSED                24 samples  |  Editorial label. Not independently detectable.
+
+  Total target classes : 12
+  Labelled samples     : 41339 / 50288 (82.2% of all events)
+
+  === TOP-90% COVERAGE CLASSES ===
+    PASS                      33151 ( 65.9%)  cum= 65.9%  TARGET+TOP90
+    BALL TOUCH                 4685 (  9.3%)  cum= 75.2%  TOP90
+    AERIAL                     2144 (  4.3%)  cum= 79.5%  TARGET+TOP90
+    TACKLE                     1968 (  3.9%)  cum= 83.4%  TARGET+TOP90
+    BALL RECOVERY              1392 (  2.8%)  cum= 86.2%  TARGET+TOP90
+    FOUL                       1388 (  2.8%)  cum= 88.9%  TOP90
+    TAKEON                     1212 (  2.4%)  cum= 91.4%  TOP90
+    INTERCEPTION                692 (  1.4%)  cum= 92.7%  TARGET
+    CHALLENGE                   644 (  1.3%)  cum= 94.0%  
+    DISPOSSESSED                595 (  1.2%)  cum= 95.2%  TARGET
+    SAVED SHOT                  380 (  0.8%)  cum= 95.9%  TARGET
+    SAVE                        338 (  0.7%)  cum= 96.6%  TARGET
+    SUBSTITUTION ON             294 (  0.6%)  cum= 97.2%  
+    SUBSTITUTION OFF            294 (  0.6%)  cum= 97.8%  
+    CLEARANCE                   285 (  0.6%)  cum= 98.4%  TARGET
+    MISSED SHOT                 267 (  0.5%)  cum= 98.9%  TARGET
+    CARD                        141 (  0.3%)  cum= 99.2%  
+    GOAL                         99 (  0.2%)  cum= 99.4%  TARGET
+    CLAIM                        77 (  0.2%)  cum= 99.5%  
+    OFFSIDE PASS                 75 (  0.1%)  cum= 99.7%  
+    END                          66 (  0.1%)  cum= 99.8%  
+    KEEPER PICKUP                28 (  0.1%)  cum= 99.9%  TARGET
+    CHANCE MISSED                24 (  0.0%)  cum= 99.9%  
+    FORMATION CHANGE             22 (  0.0%)  cum= 99.9%  
+    SHOT ON POST                 14 (  0.0%)  cum=100.0%  
+    ERROR                        11 (  0.0%)  cum=100.0%  
+    PENALTY FACED                 2 (  0.0%)  cum=100.0%  
+
+  Final targets coverage : 82.2% of all labelled events
+  Target classes         : ['PASS', 'TACKLE', 'INTERCEPTION', 'CLEARANCE', 'BALL RECOVERY', 'AERIAL', 'SAVE', 'MISSED SHOT', 'SAVED SHOT', 'GOAL', 'DISPOSSESSED', 'KEEPER PICKUP']
+
+====================================================================
+  STEP 1 COMPLETE
+  All plots saved to : /Users/salahmneimne/Desktop/driblab_capstone_2/results/eda_output
+  Full log saved to  : /Users/salahmneimne/Desktop/driblab_capstone_2/results/eda_output/eda_summary.txt
+  Next -> 02_align_and_clean.py
+====================================================================

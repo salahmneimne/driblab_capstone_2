@@ -1,0 +1,42 @@
+{
+  "macro_f1": 0.16871251782447264,
+  "per_class": {
+    "AERIAL": {
+      "precision": 0.04791344667697063,
+      "recall": 0.04337686567164179,
+      "f1": 0.04553243574051407,
+      "support": 2144
+    },
+    "CLEARANCE": {
+      "precision": 0.0052565180824222036,
+      "recall": 0.08771929824561403,
+      "f1": 0.00991866693116445,
+      "support": 285
+    },
+    "NO EVENT": {
+      "precision": 0.5059876425250016,
+      "recall": 0.38939679894115053,
+      "f1": 0.4401013892544012,
+      "support": 40799
+    },
+    "PASS": {
+      "precision": 0.43156602615551676,
+      "recall": 0.2757382884377545,
+      "f1": 0.3364867849517779,
+      "support": 33151
+    },
+    "POSSESSION_CHANGE_GROUP": {
+      "precision": 0.05567120680425861,
+      "recall": 0.2014202711426727,
+      "f1": 0.08723205964585275,
+      "support": 4647
+    },
+    "SHOT_OR_GK_GROUP": {
+      "precision": 0.055050421557282195,
+      "recall": 0.2994604316546763,
+      "f1": 0.09300377042312527,
+      "support": 1112
+    }
+  },
+  "note": "SAVE/SAVED SHOT/MISSED SHOT/GOAL/KEEPER PICKUP collapsed to SHOT_OR_GK_GROUP; TACKLE/INTERCEPTION/BALL RECOVERY/DISPOSSESSED collapsed to POSSESSION_CHANGE_GROUP because simple rules cannot distinguish these without richer context."
+}
